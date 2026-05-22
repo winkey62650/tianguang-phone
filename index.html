@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="天光CULTURE Poker Clock">
+  <meta name="theme-color" content="#0c0c0c">
+  <title>天光CULTURE Poker Clock</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230c0c0c' width='192' height='192'/><text x='50%' y='50%' font-size='120' fill='%23d4af37' text-anchor='middle' dominant-baseline='central' font-family='Arial'>♠</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%230c0c0c' width='180' height='180'/><text x='50%' y='50%' font-size='100' fill='%23d4af37' text-anchor='middle' dominant-baseline='central' font-family='Arial'>♠</text></svg>">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    /* ── 真机横屏自适应 ── */
+    html {
+      width: 100%;
+      height: 100%;
+      background: #1a1a1a;
+    }
+    body {
+      width: 100vw;
+      min-height: 100dvh;
+      background: #0c0c0c;
+      background-image:
+        repeating-linear-gradient(45deg,  rgba(212,175,55,0.04) 0 1px, transparent 1px 6px),
+        repeating-linear-gradient(-45deg, rgba(212,175,55,0.03) 0 1px, transparent 1px 6px);
+      font-family: 'Oswald', 'Arial Black', sans-serif;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      margin: 0;
+      padding: max(0px, env(safe-area-inset-top)) max(0px, env(safe-area-inset-right)) max(0px, env(safe-area-inset-bottom)) max(0px, env(safe-area-inset-left));
+    }
+
+    /* ── 顶栏 ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 6px max(10px, env(safe-area-inset-left));
+      border-bottom: 1px solid rgba(212,175,55,0.25);
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .brand {
+      color: #d4af37;
+      font-size: clamp(28px, 4vw, 52px);
+      font-weight: 700;
+      letter-spacing: 8px;
+      text-shadow: 0 0 20px rgba(212,175,55,0.6);
+      visibility: hidden;
+    }
+
+    .level-info {
+      color: rgba(212,175,55,0.65);
+      font-size: clamp(12px, 1.4vw, 18px);
+      letter-spacing: 2px;
+      text-align: center;
+    }
+
+    .progress-wrap {
+      width: 180px;
+      height: 5px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #6d5c0f, #d4af37, #ff5572);
+      transition: width 1s linear;
+    }
+
+    .topbar-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    /* ── 主内容：三列 ── */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1.4fr 1fr;
+      gap: 0;
+      padding: 0 max(2px, env(safe-area-inset-right));
+      padding-left: max(2px, env(safe-area-inset-left));
+      min-height: 0;
+      width: 100%;
+    }
+
+    .col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px;
+    }
+
+    /* 左列 — 总杯数 */
+    .col-cups {
+      border-right: 1px solid rgba(212,175,55,0.15);
+    }
+
+    .cups-label {
+      color: #d4af37;
+      font-size: clamp(24px, 3.5vw, 48px);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .cups-number {
+      color: #f5f0e8;
+      font-size: clamp(100px, 18vw, 200px);
+      font-weight: 700;
+      line-height: 1;
+      text-shadow: 0 0 60px rgba(245,240,232,0.2);
+    }
+
+    .cup-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    /* 中列 — 计时 */
+    .col-timer { gap: 10px; }
+
+    .timer-digits {
+      font-size: clamp(90px, 18vw, 200px);
+      font-weight: 700;
+      color: #f5f0e8;
+      font-family: 'Courier New', monospace;
+      line-height: 1;
+      letter-spacing: -4px;
+      text-shadow: 0 0 40px rgba(245,240,232,0.2);
+      transition: color 0.3s;
+    }
+    .timer-digits.warning {
+      color: #e05a3a;
+      text-shadow: 0 0 30px rgba(224,90,58,0.8);
+      animation: blink .55s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .blind-now-big {
+      color: rgba(255,255,255,0.9);
+      font-size: clamp(32px, 6vw, 76px);
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .next-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      margin-top: 6px;
+    }
+    .next-label {
+      color: #d4af37;
+      font-size: clamp(11px, 1.2vw, 16px);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .next-value {
+      color: rgba(245,240,232,0.45);
+      font-size: clamp(18px, 2.8vw, 38px);
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    /* 右列 — 筹码 2×2 */
+    .col-next {
+      border-left: 1px solid rgba(212,175,55,0.15);
+    }
+
+    /* 筹码 2×2 网格 */
+    .chips-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 6px;
+      align-items: center;
+      justify-items: center;
+    }
+
+    /* 可编辑桌名 */
+    .table-title-wrap {
+      display: flex; align-items: center; gap: 6px;
+      position: absolute; left: 50%; transform: translateX(-50%);
+    }
+    .table-title {
+      color: #d4af37;
+      font-size: clamp(28px, 4vw, 56px);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      outline: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color .2s;
+      cursor: text;
+      min-width: 30px;
+      text-align: center;
+    }
+    .table-title:focus { border-bottom-color: #d4af37; }
+    .edit-icon { color: rgba(212,175,55,.35); font-size:12px; cursor:pointer; }
+    .edit-icon:hover { color:#d4af37; }
+
+    /* ── 底栏 ── */
+    .bottombar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+      border-top: 1px solid rgba(212,175,55,0.2);
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .chip-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chip-wrap svg,
+    .chip-wrap img {
+      width: clamp(110px, 15vw, 190px);
+      height: clamp(110px, 15vw, 190px);
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.28));
+      object-fit: contain;
+      display: block;
+    }
+
+    .chip-label {
+      color: rgba(255,255,255,0.55);
+      font-size: clamp(20px, 2.8vw, 36px);
+      letter-spacing: 1px;
+    }
+
+    /* ── 控制区（平板可见，TV模式隐藏）── */
+    .controls-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      padding: 9px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(12px, 1.3vw, 16px);
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      transition: transform .12s, filter .12s;
+      white-space: nowrap;
+    }
+    .btn:hover  { transform:scale(1.06); filter:brightness(1.15); }
+    .btn:active { transform:scale(0.95); }
+
+    .btn-start  { background:linear-gradient(135deg,#2d6a30,#3d9142); color:#fff; }
+    .btn-pause  { background:linear-gradient(135deg,#7a3d10,#c96820); color:#fff; }
+    .btn-reset  { background:linear-gradient(135deg,#6a1515,#9d8226); color:#fff; }
+    .btn-cup-add { background:linear-gradient(135deg,#8b7620,#d4af37); color:#fff; font-size:clamp(16px,2vw,22px); padding:5px 14px; border-radius:8px; font-weight:900; }
+    .btn-cup-sub { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); font-size:clamp(16px,2vw,22px); padding:5px 14px; border-radius:8px; font-weight:900; }
+
+    .settings-inline {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .settings-label { color:rgba(212,175,55,0.5); font-size:12px; letter-spacing:1px; text-transform:uppercase; }
+    .settings-input {
+      background:rgba(0,0,0,0.4); border:1px solid rgba(212,175,55,0.3);
+      color:#d4af37; padding:6px 8px; border-radius:6px; width:52px;
+      text-align:center; font-size:14px; font-family:'Oswald',sans-serif; font-weight:bold;
+    }
+    .settings-input:focus { outline:none; border-color:#d4af37; }
+
+    /* 右下角浮动加减酒 */
+    .cup-float {
+      position: fixed;
+      bottom: max(6px, env(safe-area-inset-bottom));
+      right: max(6px, env(safe-area-inset-right));
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 50;
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 12px;
+      padding: 4px 6px;
+    }
+    .cup-float-label {
+      color: #d4af37;
+      font-size: clamp(11px, 1.2vw, 15px);
+      letter-spacing: 2px;
+    }
+    /* TV模式切换 */
+    .tv-btn {
+      background: none;
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 8px;
+      color: rgba(212,175,55,0.5);
+      cursor: pointer;
+      font-size: 26px;
+      padding: 8px 14px;
+      transition: all .2s;
+    }
+    .tv-btn:hover { color:#d4af37; border-color:#d4af37; }
+
+    /* TV模式：隐藏控制 */
+    body.tv-mode .controls-area { display:none; }
+    body.tv-mode .cup-btns      { display:none; }
+    body.tv-mode .tv-btn        { opacity:.15; }
+    body.tv-mode .tv-btn:hover  { opacity:1; }
+
+    /* ── 涨盲动画 ── */
+    .level-flash {
+      position: fixed; inset: 0; z-index: 200;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 18px;
+      background: rgba(0,0,0,0.82);
+      pointer-events: none;
+      opacity: 0;
+    }
+    .level-flash.show {
+      animation: flashAnim 3.2s ease forwards;
+    }
+    @keyframes flashAnim {
+      0%   { opacity:0; }
+      12%  { opacity:1; }
+      75%  { opacity:1; }
+      100% { opacity:0; }
+    }
+    .lf-tag {
+      color: #d4af37;
+      font-size: clamp(18px, 2.5vw, 32px);
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      animation: none;
+    }
+    .lf-blinds {
+      color: #f5f0e8;
+      font-size: clamp(60px, 12vw, 140px);
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-shadow: 0 0 60px rgba(212,175,55,0.9), 0 0 120px rgba(212,175,55,0.4);
+      animation: scaleIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+      animation-delay: 0.15s;
+    }
+    .lf-level {
+      color: rgba(212,175,55,0.7);
+      font-size: clamp(14px, 1.8vw, 22px);
+      letter-spacing: 4px;
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.6); opacity:0; }
+      to   { transform: scale(1);   opacity:1; }
+    }
+    .lf-bar {
+      width: clamp(160px, 20vw, 280px); height: 3px;
+      background: linear-gradient(90deg, transparent, #d4af37, transparent);
+      border-radius: 2px;
+    }
+
+    /* ── 结束遮罩 ── */
+    .finished-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.85);
+      display:none; align-items:center; justify-content:center;
+      flex-direction:column; gap:20px; z-index:100;
+    }
+    .finished-overlay.show { display:flex; }
+    .finished-text { color:#d4af37; font-size:clamp(40px,7vw,80px); font-weight:700; letter-spacing:6px; text-shadow:0 0 40px rgba(212,175,55,0.8); }
+
+    /* ── 密码浮窗 ── */
+    #pw-overlay {
+      position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,0.75); backdrop-filter:blur(6px);
+      display:flex; align-items:center; justify-content:center;
+    }
+    #pw-overlay.hidden { display:none; }
+
+    .pw-box {
+      background:linear-gradient(160deg,#1c1c1c,#141414);
+      border:1px solid rgba(212,175,55,0.4); border-radius:14px;
+      padding:32px 28px 24px; display:flex; flex-direction:column;
+      align-items:center; gap:16px; min-width:260px; position:relative;
+      box-shadow:0 20px 60px rgba(0,0,0,0.7);
+    }
+    .pw-box::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      border-radius:14px 14px 0 0;
+      background:linear-gradient(90deg,transparent,#d4af37,transparent);
+    }
+    .pw-title { color:#d4af37; font-size:15px; letter-spacing:3px; text-transform:uppercase; }
+    .pw-input {
+      background:rgba(0,0,0,0.4); border:1px solid rgba(212,175,55,0.3);
+      border-radius:8px; color:#f5f0e8; font-family:'Oswald',sans-serif;
+      font-size:22px; letter-spacing:6px; text-align:center;
+      padding:10px 16px; width:100%; outline:none; transition:border-color .2s;
+    }
+    .pw-input:focus { border-color:#d4af37; }
+    .pw-error { color:#e05a3a; font-size:12px; letter-spacing:2px; height:16px; text-transform:uppercase; }
+    .pw-error.shake { animation:pwshake .35s ease; }
+    @keyframes pwshake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+    .pw-btn {
+      background:linear-gradient(135deg,#8b7620,#d4af37); border:none; border-radius:8px;
+      color:#fff; font-family:'Oswald',sans-serif; font-size:14px; font-weight:700;
+      letter-spacing:2px; padding:10px 32px; cursor:pointer; transition:filter .15s,transform .12s;
+    }
+    .pw-btn:hover { filter:brightness(1.12); }
+    .pw-btn:active { transform:scale(0.96); }
+
+    /* 手机横屏：保持电视版三列布局，只缩小字体 */
+    @media (max-width: 900px) and (orientation: landscape) {
+      .timer-digits  { font-size: clamp(60px, 12vw, 110px); }
+      .blind-now-big { font-size: clamp(20px, 4vw, 46px); }
+      .cups-number   { font-size: clamp(60px, 12vw, 110px); }
+      .chip-wrap svg,
+      .chip-wrap img { width: clamp(50px, 8vw, 80px); height: clamp(50px, 8vw, 80px); }
+    }
+
+    /* ── 配置按钮 ── */
+    .cfg-btn {
+      background: none;
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 8px;
+      color: rgba(212,175,55,0.5);
+      cursor: pointer;
+      font-size: 26px;
+      padding: 8px 14px;
+      transition: all .2s;
+    }
+    .cfg-btn:hover { color:#d4af37; border-color:#d4af37; }
+
+    /* ── 配置弹窗 ── */
+    #cfg-overlay {
+      position: fixed; inset: 0; z-index: 8000;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #cfg-overlay.hidden { display: none; }
+
+    .cfg-box {
+      background: linear-gradient(160deg,#1c1c1c,#141414);
+      border: 1px solid rgba(212,175,55,0.4); border-radius: 14px;
+      padding: 28px 28px 22px; min-width: 320px; max-width: 460px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7); position: relative;
+    }
+    .cfg-box::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      border-radius:14px 14px 0 0;
+      background:linear-gradient(90deg,transparent,#d4af37,transparent);
+    }
+    .cfg-title {
+      color: #d4af37; font-size: 14px; letter-spacing: 3px;
+      text-transform: uppercase; margin-bottom: 18px; text-align: center;
+    }
+    .cfg-subtitle {
+      color: rgba(245,240,232,0.5);
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-align: center;
+      margin: -8px 0 16px;
+    }
+    .cfg-levels {
+      display: grid; grid-template-columns: 1fr;
+      gap: 8px; max-height: 360px; overflow-y: auto;
+      padding-right: 4px; margin-bottom: 18px;
+    }
+    .cfg-levels::-webkit-scrollbar { width: 4px; }
+    .cfg-levels::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+    .cfg-levels::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.4); border-radius: 2px; }
+
+    .cfg-level-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      transition: background .15s, border-color .15s;
+      border: 1px solid rgba(212,175,55,0.08);
+    }
+    .cfg-level-item:hover { background: rgba(212,175,55,0.08); border-color: rgba(212,175,55,0.18); }
+    .cfg-level-text {
+      color: rgba(245,240,232,0.75); font-size: 13px; letter-spacing: 1px;
+      font-family: 'Oswald', sans-serif;
+    }
+    .cfg-level-meta {
+      color: rgba(212,175,55,0.72);
+      font-size: 11px;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+    .cfg-duration-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cfg-duration-input {
+      width: 62px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 6px;
+      color: #f5f0e8;
+      padding: 7px 8px;
+      text-align: center;
+      font-size: 14px;
+      font-family:'Oswald',sans-serif;
+      font-weight: 700;
+    }
+    .cfg-duration-input:focus {
+      outline: none;
+      border-color: #d4af37;
+    }
+    .cfg-duration-unit {
+      color: rgba(212,175,55,0.6);
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .cfg-level-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+    }
+    .cfg-level-blinds {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .cfg-level-content > div:first-child {
+      flex: 1;
+      min-width: 100px;
+    }
+    .cfg-blind-input {
+      width: 50px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 4px;
+      color: #d4af37;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 12px;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+    }
+    .cfg-blind-input:focus {
+      outline: none;
+      border-color: #d4af37;
+    }
+    .cfg-blind-sep {
+      color: rgba(212,175,55,0.5);
+      font-size: 12px;
+    }
+
+    .cfg-actions {
+      display: flex; gap: 10px; justify-content: flex-end; align-items: center;
+    }
+    .cfg-select-all {
+      color: rgba(212,175,55,0.5); font-size: 11px; letter-spacing: 1px;
+      text-transform: uppercase; cursor: pointer; flex: 1;
+      background: none; border: none; font-family: 'Oswald',sans-serif;
+      text-align: left; padding: 0;
+    }
+    .cfg-select-all:hover { color: #d4af37; }
+    .cfg-cancel {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; color: rgba(255,255,255,0.45);
+      font-family: 'Oswald',sans-serif; font-size: 13px; font-weight: 600;
+      letter-spacing: 1.5px; padding: 8px 18px; cursor: pointer;
+      transition: filter .15s;
+    }
+    .cfg-cancel:hover { filter: brightness(1.3); }
+    .cfg-confirm {
+      background: linear-gradient(135deg,#8b7620,#d4af37); border: none;
+      border-radius: 8px; color: #fff;
+      font-family: 'Oswald',sans-serif; font-size: 13px; font-weight: 700;
+      letter-spacing: 2px; padding: 8px 22px; cursor: pointer;
+      transition: filter .15s, transform .12s;
+    }
+    .cfg-confirm:hover { filter: brightness(1.12); }
+    .cfg-confirm:active { transform: scale(0.96); }
+
+    /* ── iPhone 16 横屏优化 (844x390) ── */
+    @media (min-width: 830px) and (max-height: 430px) and (orientation: landscape) {
+      /* 顶栏 */
+      .topbar {
+        padding: 2px 6px 2px;
+      }
+      .brand { font-size: 16px; letter-spacing: 3px; }
+      .table-title { font-size: 32px; letter-spacing: 2px; }
+      .edit-icon { font-size: 10px; }
+      .tv-btn, .cfg-btn { font-size: 16px; padding: 4px 8px; }
+      .level-info { font-size: 12px; }
+      .progress-wrap { width: 132px; margin-bottom: 3px; }
+
+      /* 主内容 */
+      .main {
+        grid-template-columns: 0.62fr 1.34fr 1.14fr;
+        padding: 0 1px;
+      }
+      .col {
+        padding: 2px 4px;
+      }
+      .col-timer { gap: 4px; }
+
+      /* 杯数 */
+      .cups-label { font-size: 17px; margin-bottom: 3px; }
+      .cups-number { font-size: 68px; }
+      .cup-btns { margin-top: 4px; gap: 4px; }
+
+      /* 计时器 */
+      .timer-digits { font-size: 96px; letter-spacing: -2px; margin-bottom: 0; }
+      .blind-now-big { font-size: 24px; letter-spacing: 1px; }
+      .next-label { font-size: 12px; }
+      .next-value { font-size: 20px; }
+      .next-wrap { margin-top: 2px; gap: 1px; }
+
+      /* 筹码 */
+      .chips-grid { gap: 4px 3px; }
+      .chip-wrap svg,
+      .chip-wrap img {
+        width: clamp(78px, 11.5vw, 106px);
+        height: clamp(78px, 11.5vw, 106px);
+      }
+      .chip-label { font-size: 16px; }
+
+      /* 底栏 */
+      .bottombar {
+        padding: 2px 4px;
+        gap: 4px;
+      }
+      .controls-area {
+        gap: 4px;
+      }
+      .btn {
+        padding: 4px 8px;
+        font-size: 13px;
+      }
+
+      /* 浮动按钮 */
+      .cup-float {
+        bottom: 4px;
+        right: 4px;
+        padding: 3px 5px;
+        gap: 3px;
+      }
+      .cup-float-label { font-size: 12px; }
+      .btn-cup-add, .btn-cup-sub { padding: 4px 8px; font-size: 14px; }
+    }
+
+    /* ── Huawei nova 5 Pro 横屏优化（约 780×360 CSS px）── */
+    @media (min-width: 700px) and (max-width: 829px) and (max-height: 430px) and (orientation: landscape) {
+      body {
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .topbar {
+        min-height: 38px;
+        padding: 2px max(8px, env(safe-area-inset-right)) 2px max(8px, env(safe-area-inset-left));
+      }
+      .table-title {
+        font-size: 28px;
+        letter-spacing: 2px;
+      }
+      .edit-icon {
+        font-size: 10px;
+      }
+      .topbar-right {
+        flex-direction: row;
+        gap: 5px;
+      }
+      .tv-btn,
+      .cfg-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        font-size: 15px;
+        line-height: 1;
+      }
+
+      .main {
+        grid-template-columns: 0.62fr 1.32fr 1.06fr;
+        padding: 0 max(2px, env(safe-area-inset-right));
+        padding-left: max(2px, env(safe-area-inset-left));
+      }
+      .col {
+        padding: 2px 4px;
+      }
+      .col-timer {
+        gap: 3px;
+      }
+
+      .level-info {
+        font-size: 11px;
+        letter-spacing: 1.5px;
+      }
+      .progress-wrap {
+        width: 118px !important;
+        height: 4px;
+        margin-top: 3px;
+        margin-bottom: 2px !important;
+      }
+      .timer-digits {
+        font-size: 82px;
+        letter-spacing: -2px;
+      }
+      .blind-now-big {
+        font-size: 24px;
+        letter-spacing: 1px;
+      }
+      .next-wrap {
+        margin-top: 1px;
+        gap: 0;
+      }
+      .next-label {
+        font-size: 10px;
+        letter-spacing: 1.5px;
+      }
+      .next-value {
+        font-size: 17px;
+      }
+
+      .cups-label {
+        font-size: 18px;
+        letter-spacing: 2px;
+        margin-bottom: 3px;
+      }
+      .cups-number {
+        font-size: 76px;
+      }
+
+      .chips-grid {
+        gap: 3px 2px;
+      }
+      .chip-wrap {
+        gap: 1px;
+      }
+      .chip-wrap svg,
+      .chip-wrap img {
+        width: 62px;
+        height: 62px;
+      }
+      .chip-label {
+        font-size: 13px;
+      }
+
+      .bottombar {
+        min-height: 38px;
+        padding: 2px max(4px, env(safe-area-inset-right)) max(3px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+      }
+      .controls-area {
+        gap: 4px;
+      }
+      .btn {
+        min-height: 30px;
+        padding: 4px 8px;
+        font-size: 12px;
+        letter-spacing: 1px;
+      }
+
+      .cup-float {
+        bottom: max(4px, env(safe-area-inset-bottom));
+        right: max(4px, env(safe-area-inset-right));
+        padding: 3px 5px;
+        gap: 3px;
+      }
+      .cup-float-label {
+        display: none;
+      }
+      .btn-cup-add,
+      .btn-cup-sub {
+        min-width: 30px;
+        min-height: 30px;
+        padding: 3px 8px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 配置弹窗 -->
+<div id="cfg-overlay" class="hidden">
+  <div class="cfg-box">
+    <div class="cfg-title">设置升盲时间</div>
+    <div class="cfg-subtitle" id="cfg-subtitle">共 20 个级别，每级可单独设置分钟数</div>
+    <div class="cfg-levels" id="cfg-levels"></div>
+    <div class="cfg-actions">
+      <button class="cfg-select-all" onclick="resetDefaultDurations()">恢复默认</button>
+      <button class="cfg-cancel" onclick="closeCfg()">取消</button>
+      <button class="cfg-confirm" onclick="applyCfg()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 涨盲动画 -->
+<div class="level-flash" id="level-flash">
+  <div class="lf-tag">盲注上涨</div>
+  <div class="lf-bar"></div>
+  <div class="lf-blinds" id="lf-blinds">—</div>
+  <div class="lf-level" id="lf-level">LEVEL 2</div>
+</div>
+
+<!-- 结束遮罩 -->
+<div class="finished-overlay" id="fin">
+  <div class="finished-text">GAME OVER</div>
+  <button class="btn btn-reset" onclick="resetTimer()">重新开始</button>
+</div>
+
+<!-- 顶栏 -->
+<div class="topbar">
+  <div class="brand">天光CULTURE</div>
+  <div class="table-title-wrap">
+    <span class="table-title" id="table-title" contenteditable="true" spellcheck="false"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">天光CULTURE</span>
+    <span class="edit-icon" onclick="document.getElementById('table-title').focus()">✏️</span>
+  </div>
+  <div class="topbar-right">
+    <button class="cfg-btn" onclick="openCfg()" title="配置级别">⚙️</button>
+    <button class="tv-btn" onclick="toggleTV()" title="切换TV模式">📺</button>
+  </div>
+</div>
+
+<!-- 三列主体 -->
+<div class="main">
+
+  <!-- 左：总杯数 -->
+  <div class="col col-cups">
+    <div class="cups-label">总杯数</div>
+    <div class="cups-number" id="cups">0</div>
+  </div>
+
+  <!-- 中：计时器 -->
+  <div class="col col-timer">
+    <div class="level-info" id="level-info">LEVEL 1 / 20</div>
+    <div class="progress-wrap" style="width:180px;margin-bottom:6px">
+      <div class="progress-fill" id="prog" style="width:100%"></div>
+    </div>
+    <div class="timer-digits" id="timer">15:00</div>
+    <div class="blind-now-big" id="blind-now">100 / 200</div>
+    <div class="next-wrap">
+      <div class="next-label">下一级别</div>
+      <div class="next-value" id="blind-next">200 / 400</div>
+    </div>
+  </div>
+
+  <!-- 右：筹码 2×2 -->
+  <div class="col col-next">
+    <div class="chips-grid" id="chips-grid"></div>
+  </div>
+
+</div>
+
+<!-- 右下角浮动加减酒 -->
+<div class="cup-float" id="cup-float">
+  <span class="cup-float-label">总杯数</span>
+  <button class="btn btn-cup-sub" onclick="changeCup(-1)">−</button>
+  <button class="btn btn-cup-add" onclick="changeCup(1)">+</button>
+</div>
+
+<!-- 底栏 -->
+<div class="bottombar">
+  <!-- 控制按钮 -->
+  <div class="controls-area">
+    <button class="btn btn-start" onclick="startTimer()">▶ 开始</button>
+    <button class="btn btn-pause" onclick="pauseTimer()">⏸ 暂停</button>
+    <button class="btn btn-reset" onclick="resetTimer()">↺ 重置</button>
+  </div>
+</div>
+
+<script>
+  // ── 筹码:天光CULTURE 黑胶唱片 ──
+  const CHIPS = [
+    { value:'100',   style:'line',  ink:'#d2d8df', sparkle:'#0c0c0c' },
+    { value:'1000',  style:'solid', body:'#4f81c9', bodyHi:'#86abe0', groove:'#345f9c',
+      rim:'#2b5081', label:'#243a66', labelHi:'#33508a', ink:'#f1e3ad', sparkle:'#243a66' },
+    { value:'5000',  style:'solid', body:'#ed9b40', bodyHi:'#f8c184', groove:'#cd7a26',
+      rim:'#ac671e', label:'#bd601c', labelHi:'#da7a2d', ink:'#f8e8bf', sparkle:'#bd601c' },
+    { value:'10000', style:'line',  ink:'#f4f1ea', sparkle:'#0c0c0c' },
+  ];
+
+  function chipSVG(c){
+    const solid = c.style === 'solid';
+    const id = 'k' + c.value;
+    const ink = c.ink;
+
+    let grooves = '';
+    for (let i = 0; i < 13; i++){
+      const r = (64 + 28 * i / 12).toFixed(2);
+      grooves += `<circle cx="100" cy="100" r="${r}" fill="none" stroke="${solid ? c.groove : ink}"`
+        + ` stroke-width="${solid ? 1.05 : 1.4}" opacity="${solid ? 0.5 : 0.88}"/>`;
+    }
+
+    let defs = `<path id="${id}t" d="M 53,100 A 47,47 0 0 1 147,100"/>`
+      + `<path id="${id}b" d="M 147,100 A 47,47 0 0 1 53,100"/>`;
+    if (solid){
+      defs += `<radialGradient id="${id}body" cx="37%" cy="30%" r="84%">`
+        + `<stop offset="0%" stop-color="${c.bodyHi}"/><stop offset="58%" stop-color="${c.body}"/>`
+        + `<stop offset="100%" stop-color="${c.groove}"/></radialGradient>`
+        + `<radialGradient id="${id}lab" cx="40%" cy="32%" r="86%">`
+        + `<stop offset="0%" stop-color="${c.labelHi}"/><stop offset="100%" stop-color="${c.label}"/>`
+        + `</radialGradient>`;
+    }
+
+    const disc = solid
+      ? `<circle cx="100" cy="100" r="97" fill="${c.rim}"/>`
+        + `<circle cx="100" cy="100" r="94" fill="url(#${id}body)"/>`
+      : `<circle cx="100" cy="100" r="95" fill="none" stroke="${ink}" stroke-width="2.3" opacity="0.92"/>`;
+
+    const labelDisc = solid
+      ? `<circle cx="100" cy="100" r="61.5" fill="url(#${id}lab)"/>`
+        + `<circle cx="100" cy="100" r="61.5" fill="none" stroke="${ink}" stroke-width="0.8" opacity="0.4"/>`
+      : `<circle cx="100" cy="100" r="61.5" fill="none" stroke="${ink}" stroke-width="1.5" opacity="0.88"/>`;
+
+    const petal = (x, y) => `<circle cx="${x}" cy="${y}" r="17" fill="${ink}"/>`;
+    const clover = `<g>`
+      + petal(85,85) + petal(115,85) + petal(85,115) + petal(115,115)
+      + `<path d="M 124,117 C 130,120 133,125 131,131 C 129,126 125,122 119,120 Z" fill="${ink}"/>`
+      + `</g>`;
+
+    const sparkle = `<path d="M 100,85 Q 102,98 115,100 Q 102,102 100,115`
+      + ` Q 98,102 85,100 Q 98,98 100,85 Z" fill="${c.sparkle}"/>`;
+
+    const ts = "font-family:'Oswald','PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC',sans-serif;"
+      + "font-weight:600;letter-spacing:2.2px;";
+
+    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="筹码 ${c.value}">`
+      + `<defs>${defs}</defs>`
+      + disc + grooves + labelDisc
+      + `<text style="${ts}" font-size="13" fill="${ink}" text-anchor="middle">`
+      + `<textPath href="#${id}t" startOffset="50%">天光CULTURE</textPath></text>`
+      + `<text style="${ts}" font-size="13" fill="${ink}" text-anchor="middle">`
+      + `<textPath href="#${id}b" startOffset="50%">天光CULTURE</textPath></text>`
+      + clover + sparkle
+      + `</svg>`;
+  }
+
+  const grid = document.getElementById('chips-grid');
+  CHIPS.forEach(c => {
+    const wrap = document.createElement('div');
+    wrap.className = 'chip-wrap';
+    wrap.innerHTML = chipSVG(c) + `<div class="chip-label">${c.value}</div>`;
+    grid.appendChild(wrap);
+  });
+
+  // ── 时钟 ──
+  const DEFAULT_LEVELS = [
+    { sb: 100, bb: 200, minutes: 15 },
+    { sb: 200, bb: 400, minutes: 15 },
+    { sb: 300, bb: 600, minutes: 10 },
+    { sb: 400, bb: 800, minutes: 10 },
+    { sb: 500, bb: 1000, minutes: 10 },
+    { sb: 1000, bb: 2000, minutes: 9 },
+    { sb: 3000, bb: 6000, minutes: 7 },
+    { sb: 5000, bb: 10000, minutes: 7 },
+    { sb: 10000, bb: 20000, minutes: 7 },
+    { sb: 20000, bb: 40000, minutes: 7 },
+    { sb: 30000, bb: 60000, minutes: 7 },
+    { sb: 40000, bb: 80000, minutes: 7 },
+    { sb: 50000, bb: 100000, minutes: 7 },
+    { sb: 60000, bb: 120000, minutes: 7 },
+    { sb: 80000, bb: 160000, minutes: 7 },
+    { sb: 100000, bb: 200000, minutes: 7 },
+    { sb: 150000, bb: 300000, minutes: 7 },
+    { sb: 200000, bb: 400000, minutes: 7 },
+    { sb: 300000, bb: 600000, minutes: 7 },
+    { sb: 500000, bb: 1000000, minutes: 7 },
+  ];
+  const BLINDS_ALL = DEFAULT_LEVELS.map(level => ({
+    ...level,
+    duration: level.minutes * 60,
+  }));
+  let BLINDS = BLINDS_ALL;
+
+  // ── 配置弹窗 ──
+  function buildCfgList() {
+    const container = document.getElementById('cfg-levels');
+    document.getElementById('cfg-subtitle').textContent =
+      `共 ${BLINDS_ALL.length} 个级别，每级可单独设置盲注和分钟数`;
+    container.innerHTML = '';
+    BLINDS_ALL.forEach((b, i) => {
+      const row = document.createElement('div');
+      row.className = 'cfg-level-item';
+      row.innerHTML = `
+        <div class="cfg-level-content">
+          <div>
+            <div class="cfg-level-text">Level ${i + 1}</div>
+            <div class="cfg-level-blinds">
+              <input class="cfg-blind-input" type="number" id="cfg-sb-${i}" min="1" value="${b.sb}">
+              <span class="cfg-blind-sep">/</span>
+              <input class="cfg-blind-input" type="number" id="cfg-bb-${i}" min="1" value="${b.bb}">
+            </div>
+          </div>
+          <div class="cfg-duration-wrap">
+            <input class="cfg-duration-input" type="number" id="cfg-min-${i}" min="1" max="120" value="${Math.round(b.duration / 60)}">
+            <span class="cfg-duration-unit">分钟</span>
+          </div>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function openCfg() {
+    buildCfgList();
+    document.getElementById('cfg-overlay').classList.remove('hidden');
+  }
+  function closeCfg() {
+    document.getElementById('cfg-overlay').classList.add('hidden');
+  }
+  function resetDefaultDurations() {
+    BLINDS_ALL.forEach((blind, i) => {
+      blind.duration = DEFAULT_LEVELS[i].minutes * 60;
+    });
+    buildCfgList();
+  }
+  function applyCfg() {
+    BLINDS_ALL.forEach((blind, i) => {
+      // 读取盲注值
+      const sbInput = document.getElementById(`cfg-sb-${i}`);
+      const bbInput = document.getElementById(`cfg-bb-${i}`);
+      const sb = parseInt(sbInput.value, 10) || 1;
+      const bb = parseInt(bbInput.value, 10) || 1;
+      blind.sb = Math.max(1, sb);
+      blind.bb = Math.max(1, bb);
+
+      // 读取时间值
+      const input = document.getElementById(`cfg-min-${i}`);
+      const minutes = parseInt(input.value, 10);
+      blind.duration = (minutes && minutes > 0 ? minutes : 1) * 60;
+    });
+    BLINDS = BLINDS_ALL;
+    closeCfg();
+    if (!S.running) {
+      S.level = 0; syncLevelTiming();
+      render();
+    } else {
+      syncLevelTiming(false);
+      render();
+    }
+  }
+
+  const S = { cups:0, level:0, timeLeft:BLINDS[0].duration, duration:BLINDS[0].duration, running:false, iv:null, warned:false };
+
+  // ── 提示音 ──
+  function playTone(freq, startTime, duration, ctx, gainVal = 0.25) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freq, startTime);
+    g.gain.setValueAtTime(0, startTime);
+    g.gain.linearRampToValueAtTime(gainVal, startTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    o.start(startTime); o.stop(startTime + duration);
+  }
+
+  // 1分钟警告：三声短音 叮叮叮
+  function playWarning() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.28, 0.56].forEach((t, i) =>
+        playTone(880 + i * 110, ctx.currentTime + t, 0.22, ctx, 0.22));
+    } catch(e) {}
+  }
+
+  // 涨盲音效：上扬三音 + 持续余音
+  function playLevelUp() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [[523, 0], [659, 0.18], [784, 0.36], [1047, 0.58]].forEach(([f, t]) =>
+        playTone(f, ctx.currentTime + t, 0.55, ctx, 0.28));
+    } catch(e) {}
+  }
+
+  // ── 涨盲动画 ──
+  function showLevelFlash() {
+    const b = BLINDS[S.level];
+    document.getElementById('lf-blinds').textContent =
+      `${b.sb.toLocaleString()} / ${b.bb.toLocaleString()}`;
+    document.getElementById('lf-level').textContent = `LEVEL ${S.level + 1}`;
+    const el = document.getElementById('level-flash');
+    el.classList.remove('show');
+    void el.offsetWidth;
+    el.classList.add('show');
+  }
+
+  function fmt(sec) {
+    return `${Math.floor(sec/60)}:${(sec%60).toString().padStart(2,'0')}`;
+  }
+
+  function syncLevelTiming(resetTimeLeft = true) {
+    const current = BLINDS[S.level];
+    S.duration = current.duration;
+    if (resetTimeLeft) {
+      S.timeLeft = current.duration;
+    } else if (S.timeLeft > current.duration) {
+      S.timeLeft = current.duration;
+    }
+  }
+
+  function render() {
+    const b  = BLINDS[S.level];
+    const nb = S.level < BLINDS.length - 1 ? BLINDS[S.level + 1] : null;
+    const el = document.getElementById('timer');
+    el.textContent = fmt(S.timeLeft);
+    el.className   = 'timer-digits' + (S.timeLeft <= 30 && S.running ? ' warning' : '');
+    document.getElementById('prog').style.width = (Math.max(0, Math.min(100, S.timeLeft / S.duration * 100))) + '%';
+    document.getElementById('blind-now').textContent  = `${b.sb.toLocaleString()} / ${b.bb.toLocaleString()}`;
+    document.getElementById('blind-next').textContent = nb
+      ? `${nb.sb.toLocaleString()} / ${nb.bb.toLocaleString()}` : '最终级别';
+    document.getElementById('level-info').textContent =
+      `LEVEL ${S.level + 1} / ${BLINDS.length}`;
+  }
+
+  function tick() {
+    if (S.timeLeft > 0) {
+      S.timeLeft--;
+      if (S.timeLeft === 60 && !S.warned) {
+        S.warned = true;
+        playWarning();
+      }
+    } else if (S.level < BLINDS.length - 1) {
+      S.level++;
+      syncLevelTiming();
+      S.warned = false;
+      playLevelUp();
+      showLevelFlash();
+    } else {
+      clearInterval(S.iv); S.running = false;
+      document.getElementById('fin').classList.add('show');
+    }
+    render();
+  }
+
+  function startTimer() {
+    if (S.running) return;
+    S.running = true; S.iv = setInterval(tick, 1000);
+  }
+  function pauseTimer() {
+    if (!S.running) return;
+    clearInterval(S.iv); S.running = false;
+  }
+  function resetTimer() {
+    clearInterval(S.iv); S.running = false;
+    S.level = 0; syncLevelTiming();
+    S.cups = 0; S.warned = false;
+    document.getElementById('cups').textContent = 0;
+    document.getElementById('fin').classList.remove('show');
+    render();
+  }
+  function changeCup(d) {
+    S.cups = Math.max(0, S.cups + d);
+    document.getElementById('cups').textContent = S.cups;
+  }
+  function toggleTV() {
+    document.body.classList.toggle('tv-mode');
+  }
+
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(880, ctx.currentTime);
+      g.gain.setValueAtTime(0.3, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1);
+      o.start(); o.stop(ctx.currentTime + 1);
+    } catch(e) {}
+  }
+
+  render();
+
+  // ── 清理旧版 PWA 缓存，避免手机继续使用历史布局 ──
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then(registrations => Promise.all(registrations.map(registration => registration.unregister())))
+      .then(() => 'caches' in window ? caches.keys().then(keys => Promise.all(keys.map(key => caches.delete(key)))) : null)
+      .then(() => console.log('旧缓存已清理'))
+      .catch(err => console.log('缓存清理失败:', err));
+  }
+
+  // ── 防止屏幕休眠（全屏模式） ──
+  if ('wakeLock' in navigator) {
+    let wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+      } catch (err) {
+        console.log('Wake Lock 请求失败:', err);
+      }
+    }
+    document.addEventListener('visibilitychange', async () => {
+      if (wakeLock && document.hidden) {
+        wakeLock.release();
+        wakeLock = null;
+      } else if (S.running) {
+        await requestWakeLock();
+      }
+    });
+    document.addEventListener('click', requestWakeLock);
+    document.addEventListener('touchstart', requestWakeLock);
+  }
+
+  // ── 进入全屏模式建议 ──
+  if (document.documentElement.requestFullscreen) {
+    console.log('支持全屏模式，点击屏幕可进入全屏');
+  }
+</script>
+</body>
+</html>
