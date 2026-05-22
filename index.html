@@ -888,12 +888,14 @@
 <script>
   // ── 筹码:天光CULTURE 黑胶唱片 ──
   const CHIPS = [
-    { value:'100',   style:'line',  ink:'#f4f1ea', sparkle:'#0c0c0c' },
+    { value:'100',   style:'solid', body:'#f2f0e9', bodyHi:'#fffffc', groove:'#d4cfbf',
+      rim:'#cbc5b3', label:'#2d2b27', labelHi:'#45423a', ink:'#f3f1e9', sparkle:'#2d2b27' },
     { value:'1000',  style:'solid', body:'#4f81c9', bodyHi:'#86abe0', groove:'#345f9c',
       rim:'#2b5081', label:'#243a66', labelHi:'#33508a', ink:'#f1e3ad', sparkle:'#243a66' },
     { value:'5000',  style:'solid', body:'#ed9b40', bodyHi:'#f8c184', groove:'#cd7a26',
       rim:'#ac671e', label:'#bd601c', labelHi:'#da7a2d', ink:'#f8e8bf', sparkle:'#bd601c' },
-    { value:'10000', style:'line',  ink:'#d2d8df', sparkle:'#0c0c0c' },
+    { value:'10000', style:'solid', body:'#a8aeb6', bodyHi:'#d2d6db', groove:'#82888f',
+      rim:'#6c7178', label:'#34383f', labelHi:'#484d55', ink:'#e9ebee', sparkle:'#34383f' },
   ];
 
   function chipSVG(c){
